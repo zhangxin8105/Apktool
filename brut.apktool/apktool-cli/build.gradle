@@ -17,6 +17,10 @@
 version = apktoolversion
 apply plugin: 'fatjar'
 
+sourceCompatibility = '1.6'
+targetCompatibility = '1.6'
+jre = '/usr/lib/jvm/java-6-sun/';
+
 configurations {
     proguard
 }
@@ -41,9 +45,10 @@ task proguard(type: JavaExec, dependsOn: fatJar) {
 
     classpath = configurations.proguard
     main = 'proguard.ProGuard'
+    args '-target 1.6'
     args '-injars ' + "${jar.archivePath}" + ' (!META-INF/LICENSE.txt,!META-INF/NOTICE.txt,!README)'
     args "-outjars ${outFile}"
-    args "-libraryjars ${System.properties['java.home']}/lib/rt.jar"
+    args "-libraryjars " + jre + "jre/lib/rt.jar"
     args '-dontobfuscate'
     args '-dontoptimize'
     args '-keep public class brut.apktool.Main { public static void main(java.lang.String[]); }'
