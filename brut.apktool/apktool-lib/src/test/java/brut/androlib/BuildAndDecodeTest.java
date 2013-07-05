@@ -41,6 +41,17 @@ public class BuildAndDecodeTest {
 		LOGGER.info("Unpacking testapp...");
 		TestUtils.copyResourceDir(BuildAndDecodeTest.class,
 				"brut/apktool/testapp/", sTestOrigDir);
+
+        LOGGER.info("Building testapp.apk...");
+        File testApk = new File(sTmpDir, "testapp.apk");
+        new Androlib().build(sTestOrigDir, testApk,
+                BuildAndDecodeTest.returnStock(),"");
+
+        LOGGER.info("Decoding testapp.apk...");
+        ApkDecoder apkDecoder = new ApkDecoder(testApk);
+        apkDecoder.setOutDir(sTestNewDir);
+        apkDecoder.decode();
+
 	}
 
 	@AfterClass
@@ -51,20 +62,6 @@ public class BuildAndDecodeTest {
 	@Test
 	public void isAaptInstalledTest() throws Exception {
 		assertEquals(true, isAaptPresent());
-	}
-
-	@Test
-	public void encodeAndDecodeTest() throws BrutException, IOException {
-
-		LOGGER.info("Building testapp.apk...");
-		File testApk = new File(sTmpDir, "testapp.apk");
-		new Androlib().build(sTestOrigDir, testApk,
-				BuildAndDecodeTest.returnStock(),"");
-
-		LOGGER.info("Decoding testapp.apk...");
-		ApkDecoder apkDecoder = new ApkDecoder(testApk);
-		apkDecoder.setOutDir(sTestNewDir);
-		apkDecoder.decode();
 	}
 
     @Test
