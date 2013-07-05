@@ -15,8 +15,10 @@
  */
 
 import org.apache.tools.ant.filters.*
+sourceCompatibility = '1.6'
+targetCompatibility = '1.6'
 
-// kudos #smali - JesusFreke, for how to build release task
+// release task
 if (!('release' in gradle.startParameter.taskNames)) {
   ant.loadfile(srcFile: "../../.git/refs/heads/master", property: fullrev, failonerror: false);
   if (ant.properties[fullrev] == null) {
@@ -43,10 +45,12 @@ processResources {
   
   includeEmptyDirs = false
 }
+
 dependencies {
   compile ("junit:junit:4.10") {
     exclude(module: 'hamcrest-core')
 }
+
 compile project(':brut.j.dir'), 
 	   project(':brut.j.util'), 
 	   project(':brut.j.common'), 
