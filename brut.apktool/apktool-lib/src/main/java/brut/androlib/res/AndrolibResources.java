@@ -182,7 +182,10 @@ final public class AndrolibResources {
 			StreamResult result = new StreamResult(new File(filePath));
 			transformer.transform(source, result);
 
-        } catch (SAXException | ParserConfigurationException | IOException | TransformerException ignored) {
+        } catch (ParserConfigurationException ignored) {
+        } catch (IOException ignored) {
+        } catch (TransformerException ignored) {
+        } catch (SAXException ignored) {
         }
     }
 
@@ -195,39 +198,40 @@ final public class AndrolibResources {
 		if ((packageInfo.get("cur_package").equalsIgnoreCase(packageInfo.get("orig_package")) || 
 		    ("android".equalsIgnoreCase(packageInfo.get("cur_package")) || 
 		        ("com.htc".equalsIgnoreCase(packageInfo.get("cur_package")))))) {
-
-			LOGGER.info("Regular manifest package...");
 		} else {
-			try {
+        try {
 
-				LOGGER.info("Renamed manifest package found! Fixing...");
-				DocumentBuilderFactory docFactory = DocumentBuilderFactory
-						.newInstance();
-				DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
-				Document doc = docBuilder.parse(filePath.toString());
+          LOGGER.info("Renamed manifest package found! Fixing...");
+          DocumentBuilderFactory docFactory = DocumentBuilderFactory
+              .newInstance();
+          DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+          Document doc = docBuilder.parse(filePath.toString());
 
-				// Get the manifest line
-				Node manifest = doc.getFirstChild();
+          // Get the manifest line
+          Node manifest = doc.getFirstChild();
 
-				// update package attribute
-				NamedNodeMap attr = manifest.getAttributes();
-				Node nodeAttr = attr.getNamedItem("package");
-				mPackageRenamed = nodeAttr.getNodeValue();
-				nodeAttr.setNodeValue(packageInfo.get("cur_package"));
+          // update package attribute
+          NamedNodeMap attr = manifest.getAttributes();
+          Node nodeAttr = attr.getNamedItem("package");
+          mPackageRenamed = nodeAttr.getNodeValue();
+          nodeAttr.setNodeValue(packageInfo.get("cur_package"));
 
-				// re-save manifest.
-				TransformerFactory transformerFactory = TransformerFactory
-						.newInstance();
-				Transformer transformer = transformerFactory.newTransformer();
-                transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-                transformer.setOutputProperty(OutputKeys.STANDALONE,"yes");
-                DOMSource source = new DOMSource(doc);
-				StreamResult result = new StreamResult(new File(filePath));
-				transformer.transform(source, result);
+          // re-save manifest.
+          TransformerFactory transformerFactory = TransformerFactory
+              .newInstance();
+          Transformer transformer = transformerFactory.newTransformer();
+                  transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+                  transformer.setOutputProperty(OutputKeys.STANDALONE,"yes");
+                  DOMSource source = new DOMSource(doc);
+          StreamResult result = new StreamResult(new File(filePath));
+          transformer.transform(source, result);
 
-            } catch (SAXException | ParserConfigurationException | IOException | TransformerException ignored) {
-            }
-        }
+          } catch (ParserConfigurationException ignored) {
+          } catch (IOException ignored) {
+          } catch (TransformerException ignored) {
+          } catch (SAXException ignored) {
+          }
+       }
 	}
 
     public void remove_manifest_versions(String filePath)
@@ -266,7 +270,10 @@ final public class AndrolibResources {
                 StreamResult result = new StreamResult(new File(filePath));
                 transformer.transform(source, result);
 
-            } catch (SAXException | ParserConfigurationException | IOException | TransformerException ignored) {
+            } catch (ParserConfigurationException ignored) {
+            } catch (IOException ignored) {
+            } catch (TransformerException ignored) {
+            } catch (SAXException ignored) {
             }
         }
     }

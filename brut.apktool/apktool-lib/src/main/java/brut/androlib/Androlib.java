@@ -546,14 +546,15 @@ public class Androlib {
 
             try {
                 // set our filesystem options
-                Map<String, String> zip_properties = new HashMap<>();
+                Map<String, String> zip_properties = new HashMap<String, String>();
                 zip_properties.put("create", "false");
                 zip_properties.put("encoding", "UTF-8");
 
                 // create filesystem
                 Path path = Paths.get(outFile.getAbsolutePath());
                 URI apkFileSystem = URI.create("jar:file:" + path.toUri().getPath());
-                try(FileSystem zipFS = FileSystems.newFileSystem(apkFileSystem, zip_properties)) {
+
+                FileSystem zipFS = FileSystems.newFileSystem(apkFileSystem, zip_properties);
 
                     // loop through files inside
                     for (Map.Entry<String,String> entry : files.entrySet()) {
@@ -565,12 +566,10 @@ public class Androlib {
                         }
                     }
                     zipFS.close();
-                }
             } catch (IOException ex) {
                 throw new AndrolibException(ex);
             }
         }
-
     }
 
     public void insertFile(FileSystem zipfs, File insert, String method, Path root)
