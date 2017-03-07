@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -28,12 +28,20 @@ public class ResResSpec {
     private final ResID mId;
     private final String mName;
     private final ResPackage mPackage;
-    private final ResType mType;
+    private final ResTypeSpec mType;
     private final Map<ResConfigFlags, ResResource> mResources = new LinkedHashMap<ResConfigFlags, ResResource>();
 
-    public ResResSpec(ResID id, String name, ResPackage pkg, ResType type) {
+    public ResResSpec(ResID id, String name, ResPackage pkg, ResTypeSpec type) {
         this.mId = id;
-        this.mName = name;
+        String cleanName;
+
+        try {
+            ResResSpec resResSpec = type.getResSpec(name);
+            cleanName = name + "_APKTOOL_DUPLICATENAME_" + id.toString();
+        } catch (AndrolibException ex) {
+            cleanName = (name.isEmpty() ? ("APKTOOL_DUMMYVAL_" + id.toString()) : name);
+        }
+        this.mName = cleanName;
         this.mPackage = pkg;
         this.mType = type;
     }
@@ -42,21 +50,19 @@ public class ResResSpec {
         return new LinkedHashSet<ResResource>(mResources.values());
     }
 
-    public ResResource getResource(ResConfig config) throws AndrolibException {
+    public ResResource getResource(ResType config) throws AndrolibException {
         return getResource(config.getFlags());
     }
 
-    public ResResource getResource(ResConfigFlags config)
-            throws AndrolibException {
+    public ResResource getResource(ResConfigFlags config) throws AndrolibException {
         ResResource res = mResources.get(config);
         if (res == null) {
-            throw new UndefinedResObject(String.format(
-                    "resource: spec=%s, config=%s", this, config));
+            throw new UndefinedResObject(String.format("resource: spec=%s, config=%s", this, config));
         }
         return res;
     }
 
-    public boolean hasResource(ResConfig config) {
+    public boolean hasResource(ResType config) {
         return hasResource(config.getFlags());
     }
 
@@ -97,21 +103,28 @@ public class ResResSpec {
         return mPackage;
     }
 
-    public ResType getType() {
+    public ResTypeSpec getType() {
         return mType;
+    }
+
+    public boolean isDummyResSpec() {
+        return getName().startsWith("APKTOOL_DUMMY_");
     }
 
     public void addResource(ResResource res) throws AndrolibException {
         addResource(res, false);
     }
 
-    public void addResource(ResResource res, boolean overwrite)
-            throws AndrolibException {
+    public void addResource(ResResource res, boolean overwrite) throws AndrolibException {
         ResConfigFlags flags = res.getConfig().getFlags();
         if (mResources.put(flags, res) != null && !overwrite) {
-            throw new AndrolibException(String.format(
-                    "Multiple resources: spec=%s, config=%s", this, flags));
+            throw new AndrolibException(String.format("Multiple resources: spec=%s, config=%s", this, flags));
         }
+    }
+
+    public void removeResource(ResResource res) throws AndrolibException {
+        ResConfigFlags flags = res.getConfig().getFlags();
+        mResources.remove(flags);
     }
 
     @Override

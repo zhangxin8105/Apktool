@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ public class ResID {
     }
 
     public ResID(int package_, int type, int entry, int id) {
-        this.package_ = package_;
+        this.package_ = (package_ == 0) ? 2 : package_;
         this.type = type;
         this.entry = entry;
         this.id = id;

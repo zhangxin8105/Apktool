@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -62,8 +62,8 @@ public class ApktoolProperties {
             try {
                 properties.load(templateStream);
                 version = properties.getProperty("application.version");
-            } catch (IOException ignored) {
-            }
+                templateStream.close();
+            } catch (IOException ignored) { }
         }
         sProps.put("baksmaliVersion", version);
 
@@ -80,14 +80,13 @@ public class ApktoolProperties {
             try {
                 properties.load(templateStream);
                 version = properties.getProperty("application.version");
-            } catch (IOException ignored) {
-            }
+                templateStream.close();
+            } catch (IOException ignored) { }
         }
         sProps.put("smaliVersion", version);
     }
 
     private static Properties sProps;
 
-    private static final Logger LOGGER = Logger
-            .getLogger(ApktoolProperties.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ApktoolProperties.class.getName());
 }

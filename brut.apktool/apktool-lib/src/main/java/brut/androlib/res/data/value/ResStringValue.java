@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import brut.androlib.AndrolibException;
 import brut.androlib.res.data.ResResource;
 import brut.androlib.res.xml.ResXmlEncoders;
 import java.io.IOException;
+import java.util.regex.Pattern;
+
 import org.xmlpull.v1.XmlSerializer;
 
 /**
@@ -27,24 +29,22 @@ import org.xmlpull.v1.XmlSerializer;
  */
 public class ResStringValue extends ResScalarValue {
 
-    public ResStringValue(String value) {
-        this(value, "string");
+    public ResStringValue(String value, int rawValue) {
+        this(value, rawValue, "string");
     }
 
-    public ResStringValue(String value, String type) {
-        super(type, value);
+    public ResStringValue(String value, int rawValue, String type) {
+        super(type, rawValue, value);
     }
 
     @Override
     public String encodeAsResXmlAttr() {
-        return ResXmlEncoders.encodeAsResXmlAttr(mRawValue);
+        return checkIfStringIsNumeric(ResXmlEncoders.encodeAsResXmlAttr(mRawValue));
     }
 
     @Override
     public String encodeAsResXmlItemValue() {
-        return ResXmlEncoders
-                .enumerateNonPositionalSubstitutionsIfRequired(ResXmlEncoders
-                        .encodeAsXmlValue(mRawValue));
+        return ResXmlEncoders.enumerateNonPositionalSubstitutionsIfRequired(ResXmlEncoders.encodeAsXmlValue(mRawValue));
     }
 
     @Override
@@ -58,10 +58,18 @@ public class ResStringValue extends ResScalarValue {
     }
 
     @Override
-    protected void serializeExtraXmlAttrs(XmlSerializer serializer,
-                                          ResResource res) throws IOException {
+    protected void serializeExtraXmlAttrs(XmlSerializer serializer, ResResource res) throws IOException {
         if (ResXmlEncoders.hasMultipleNonPositionalSubstitutions(mRawValue)) {
             serializer.attribute(null, "formatted", "false");
         }
     }
+
+    private String checkIfStringIsNumeric(String val) {
+        if (val == null || val.isEmpty()) {
+            return val;
+        }
+        return allDigits.matcher(val).matches() ? "\\ " + val : val;
+    }
+
+    private static Pattern allDigits = Pattern.compile("\\d{9,}");
 }

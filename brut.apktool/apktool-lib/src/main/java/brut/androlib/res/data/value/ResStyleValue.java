@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import brut.androlib.res.xml.ResValuesXmlSerializable;
 import brut.util.Duo;
 import java.io.IOException;
 import org.xmlpull.v1.XmlSerializer;
+import java.util.logging.Logger;
 
 /**
  * @author Ryszard Wiśniewski <brut.alll@gmail.com>
@@ -45,7 +46,7 @@ public class ResStyleValue extends ResBagValue implements
                                         ResResource res) throws IOException, AndrolibException {
         serializer.startTag(null, "style");
         serializer.attribute(null, "name", res.getResSpec().getName());
-        if (!mParent.isNull()) {
+        if (!mParent.isNull() && !mParent.referentIsNull()) {
             serializer.attribute(null, "parent", mParent.encodeAsResXmlAttr());
         } else if (res.getResSpec().getName().indexOf('.') != -1) {
             serializer.attribute(null, "parent", "");
@@ -53,13 +54,27 @@ public class ResStyleValue extends ResBagValue implements
         for (int i = 0; i < mItems.length; i++) {
             ResResSpec spec = mItems[i].m1.getReferent();
 
-            // hacky-fix remove bad ReferenceVars
-            if (spec.getDefaultResource().getValue().toString()
-                    .contains("ResReferenceValue@")) {
+            if (spec == null) {
+                LOGGER.info(String.format("null reference: m1=0x%08x(%s), m2=0x%08x(%s)",
+                        mItems[i].m1.getRawIntValue(), mItems[i].m1.getType(), mItems[i].m2.getRawIntValue(), mItems[i].m2.getType()));
                 continue;
             }
-            ResAttr attr = (ResAttr) spec.getDefaultResource().getValue();
-            String value = attr.convertToResXmlFormat(mItems[i].m2);
+
+            String name = null;
+            String value = null;
+
+            String resource = spec.getDefaultResource().getValue().toString();
+            // hacky-fix remove bad ReferenceVars
+            if (resource.contains("ResReferenceValue@")) {
+                continue;
+            } else if (resource.contains("ResStringValue@") || resource.contains("ResStyleValue@") ||
+                    resource.contains("ResBoolValue@")) {
+                name = "@" + spec.getFullName(res.getResSpec().getPackage(), false);
+            } else {
+                ResAttr attr = (ResAttr) spec.getDefaultResource().getValue();
+                value = attr.convertToResXmlFormat(mItems[i].m2);
+                name = spec.getFullName(res.getResSpec().getPackage(), true);
+            }
 
             if (value == null) {
                 value = mItems[i].m2.encodeAsResXmlValue();
@@ -70,8 +85,7 @@ public class ResStyleValue extends ResBagValue implements
             }
 
             serializer.startTag(null, "item");
-            serializer.attribute(null, "name",
-                    spec.getFullName(res.getResSpec().getPackage(), true));
+            serializer.attribute(null, "name", name);
             serializer.text(value);
             serializer.endTag(null, "item");
         }
@@ -79,4 +93,6 @@ public class ResStyleValue extends ResBagValue implements
     }
 
     private final Duo<ResReferenceValue, ResScalarValue>[] mItems;
+
+    private static final Logger LOGGER = Logger.getLogger(ResStyleValue.class.getName());
 }

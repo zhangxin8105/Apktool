@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -41,6 +41,9 @@ public class ResFlagsAttr extends ResAttr {
     @Override
     public String convertToResXmlFormat(ResScalarValue value)
             throws AndrolibException {
+        if(value instanceof ResReferenceValue) {
+            return value.encodeAsResXml();
+        }
         if (!(value instanceof ResIntValue)) {
             return super.convertToResXmlFormat(value);
         }

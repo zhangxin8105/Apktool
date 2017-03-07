@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package brut.androlib;
 
-import brut.androlib.res.util.ExtFile;
+import brut.directory.ExtFile;
 import brut.common.BrutException;
 import brut.util.OS;
 import org.junit.AfterClass;
@@ -34,6 +34,7 @@ public class BuildAndDecodeJarTest {
 
     @BeforeClass
     public static void beforeClass() throws Exception, BrutException {
+        TestUtils.cleanFrameworkFile();
         sTmpDir = new ExtFile(OS.createTempDirectory());
         sTestOrigDir = new ExtFile(sTmpDir, "testjar-orig");
         sTestNewDir = new ExtFile(sTmpDir, "testjar-new");
@@ -42,7 +43,7 @@ public class BuildAndDecodeJarTest {
 
         LOGGER.info("Building testjar.jar...");
         File testJar = new File(sTmpDir, "testjar.jar");
-        new Androlib().build(sTestOrigDir, testJar, TestUtils.returnStockHashMap(),"");
+        new Androlib().build(sTestOrigDir, testJar);
 
         LOGGER.info("Decoding testjar.jar...");
         ApkDecoder apkDecoder = new ApkDecoder(testJar);

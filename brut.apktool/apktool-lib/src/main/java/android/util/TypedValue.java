@@ -51,7 +51,16 @@ public class TypedValue {
      * container.
      */
     public static final int TYPE_FRACTION = 0x06;
-
+    /**
+     * The <var>data</var> holds a dynamic res table reference, which needs to be
+     * resolved before it can be used like TYPE_REFERENCE
+     */
+    public static final int TYPE_DYNAMIC_REFERENCE = 0x07;
+    /**
+     * The <var>data</var> an attribute resource identifier, which needs to be resolved
+     * before it can be used like a TYPE_ATTRIBUTE.
+     */
+    public static final int TYPE_DYNAMIC_ATTRIBUTE = 0x08;
     /**
      * Identifies the start of plain integer values. Any type value from this to
      * {@link #TYPE_LAST_INT} means the <var>data</var> field holds a generic
@@ -177,6 +186,17 @@ public class TypedValue {
 	/* ------------------------------------------------------------ */
 
     /**
+     * {@link #TYPE_NULL} data indicating the value was not specified.
+     */
+    public static final int DATA_NULL_UNDEFINED = 0;
+    /**
+     * {@link #TYPE_NULL} data indicating the value was explicitly set to null.
+     */
+    public static final int DATA_NULL_EMPTY = 1;
+
+    /* ------------------------------------------------------------ */
+
+    /**
      * If {@link #density} is equal to this value, then the density should be
      * treated as the system's default density value:
      * {@link DisplayMetrics#DENSITY_DEFAULT}.
@@ -254,7 +274,7 @@ public class TypedValue {
                         + FRACTION_UNIT_STRS[(data >> COMPLEX_UNIT_SHIFT)
                         & COMPLEX_UNIT_MASK];
             case TYPE_INT_HEX:
-                return "0x" + Integer.toHexString(data);
+                return String.format("0x%08X", data);
             case TYPE_INT_BOOLEAN:
                 return data != 0 ? "true" : "false";
         }

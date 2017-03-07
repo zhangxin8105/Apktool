@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,8 +21,10 @@ import brut.androlib.err.CantFind9PatchChunk;
 import brut.androlib.res.data.ResResource;
 import brut.androlib.res.data.value.ResBoolValue;
 import brut.androlib.res.data.value.ResFileValue;
+import brut.directory.DirUtil;
 import brut.directory.Directory;
 import brut.directory.DirectoryException;
+
 import java.io.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -51,7 +53,7 @@ public class ResFileDecoder {
         if (extPos == -1) {
             outFileName = outResName;
         } else {
-            ext = inFileName.substring(extPos);
+            ext = inFileName.substring(extPos).toLowerCase();
             outFileName = outResName + ext;
         }
 
@@ -61,12 +63,24 @@ public class ResFileDecoder {
                 return;
             }
             if (typeName.equals("drawable") || typeName.equals("mipmap")) {
-                if (inFileName.toLowerCase().endsWith(".9.png")) {
+                if (inFileName.toLowerCase().endsWith(".9" + ext)) {
                     outFileName = outResName + ".9" + ext;
 
                     // check for htc .r.9.png
-                    if (inFileName.toLowerCase().endsWith(".r.9.png")) {
+                    if (inFileName.toLowerCase().endsWith(".r.9" + ext)) {
                         outFileName = outResName + ".r.9" + ext;
+                    }
+
+                    // check for samsung qmg & spi
+                    if (inFileName.toLowerCase().endsWith(".qmg") || inFileName.toLowerCase().endsWith(".spi")) {
+                        copyRaw(inDir, outDir, outFileName);
+                        return;
+                    }
+
+                    // check for xml 9 patches which are just xml files
+                    if (inFileName.toLowerCase().endsWith(".xml")) {
+                        decode(inDir, inFileName, outDir, outFileName, "xml");
+                        return;
                     }
 
                     try {
@@ -92,60 +106,42 @@ public class ResFileDecoder {
         } catch (AndrolibException ex) {
             LOGGER.log(Level.SEVERE, String.format(
                     "Could not decode file, replacing by FALSE value: %s",
-                    inFileName, outFileName), ex);
-            res.replace(new ResBoolValue(false, null));
+                    inFileName), ex);
+            res.replace(new ResBoolValue(false, 0, null));
         }
     }
 
     public void decode(Directory inDir, String inFileName, Directory outDir,
                        String outFileName, String decoder) throws AndrolibException {
-        InputStream in = null;
-        OutputStream out = null;
-        try {
-            in = inDir.getFileInput(inFileName);
-            out = outDir.getFileOutput(outFileName);
+        try (
+                InputStream in = inDir.getFileInput(inFileName);
+                OutputStream out = outDir.getFileOutput(outFileName)
+        ) {
             mDecoders.decode(in, out, decoder);
+        } catch (DirectoryException | IOException ex) {
+            throw new AndrolibException(ex);
+        }
+    }
+
+    public void copyRaw(Directory inDir, Directory outDir, String filename) throws AndrolibException {
+        try {
+            DirUtil.copyToDir(inDir, outDir, filename);
         } catch (DirectoryException ex) {
             throw new AndrolibException(ex);
-        } finally {
-            try {
-                if (in != null) {
-                    in.close();
-                }
-                if (out != null) {
-                    out.close();
-                }
-            } catch (IOException ex) {
-                throw new AndrolibException(ex);
-            }
         }
     }
 
     public void decodeManifest(Directory inDir, String inFileName,
                                Directory outDir, String outFileName) throws AndrolibException {
-        InputStream in = null;
-        OutputStream out = null;
-        try {
-            in = inDir.getFileInput(inFileName);
-            out = outDir.getFileOutput(outFileName);
-            ((XmlPullStreamDecoder) mDecoders.getDecoder("xml"))
-                    .decodeManifest(in, out);
-        } catch (DirectoryException ex) {
+        try (
+                InputStream in = inDir.getFileInput(inFileName);
+                OutputStream out = outDir.getFileOutput(outFileName)
+        ) {
+            ((XmlPullStreamDecoder) mDecoders.getDecoder("xml")).decodeManifest(in, out);
+        } catch (DirectoryException | IOException ex) {
             throw new AndrolibException(ex);
-        } finally {
-            try {
-                if (in != null) {
-                    in.close();
-                }
-                if (out != null) {
-                    out.close();
-                }
-            } catch (IOException ex) {
-                throw new AndrolibException(ex);
-            }
         }
     }
 
-    private final static Logger LOGGER = Logger.getLogger(ResFileDecoder.class
-            .getName());
+    private final static Logger LOGGER = Logger.getLogger(ResFileDecoder.class.getName());
 }

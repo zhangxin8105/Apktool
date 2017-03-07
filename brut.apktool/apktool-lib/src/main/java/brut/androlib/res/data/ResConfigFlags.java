@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -26,9 +26,7 @@ public class ResConfigFlags {
     public final short mnc;
 
     public final char[] language;
-    public final char[] country;
-
-    public final short layoutDirection;
+    public final char[] region;
 
     public final byte orientation;
     public final byte touchscreen;
@@ -50,16 +48,22 @@ public class ResConfigFlags {
     public final short screenWidthDp;
     public final short screenHeightDp;
 
+    private final char[] localeScript;
+    private final char[] localeVariant;
+
+    private final byte screenLayout2;
+
     public final boolean isInvalid;
 
     private final String mQualifiers;
+
+    private final int size;
 
     public ResConfigFlags() {
         mcc = 0;
         mnc = 0;
         language = new char[] { '\00', '\00' };
-        country = new char[] { '\00', '\00' };
-        layoutDirection = SCREENLAYOUT_LAYOUTDIR_ANY;
+        region = new char[] { '\00', '\00' };
         orientation = ORIENTATION_ANY;
         touchscreen = TOUCHSCREEN_ANY;
         density = DENSITY_DEFAULT;
@@ -74,17 +78,22 @@ public class ResConfigFlags {
         smallestScreenWidthDp = 0;
         screenWidthDp = 0;
         screenHeightDp = 0;
+        localeScript = null;
+        localeVariant = null;
+        screenLayout2 = 0;
         isInvalid = false;
         mQualifiers = "";
+        size = 0;
     }
 
     public ResConfigFlags(short mcc, short mnc, char[] language,
-                          char[] country, short layoutDirection, byte orientation,
+                          char[] region, byte orientation,
                           byte touchscreen, int density, byte keyboard, byte navigation,
                           byte inputFlags, short screenWidth, short screenHeight,
                           short sdkVersion, byte screenLayout, byte uiMode,
                           short smallestScreenWidthDp, short screenWidthDp,
-                          short screenHeightDp, boolean isInvalid) {
+                          short screenHeightDp, char[] localeScript, char[] localeVariant,
+                          byte screenLayout2, boolean isInvalid, int size) {
         if (orientation < 0 || orientation > 3) {
             LOGGER.warning("Invalid orientation value: " + orientation);
             orientation = 0;
@@ -111,11 +120,26 @@ public class ResConfigFlags {
             isInvalid = true;
         }
 
+        if (localeScript != null && localeScript.length != 0) {
+            if (localeScript[0] == '\00') {
+                localeScript = null;
+            }
+        } else {
+            localeScript = null;
+        }
+
+        if (localeVariant != null && localeVariant.length != 0) {
+            if (localeVariant[0] == '\00') {
+                localeVariant = null;
+            }
+        }  else {
+            localeVariant = null;
+        }
+
         this.mcc = mcc;
         this.mnc = mnc;
         this.language = language;
-        this.country = country;
-        this.layoutDirection = layoutDirection;
+        this.region = region;
         this.orientation = orientation;
         this.touchscreen = touchscreen;
         this.density = density;
@@ -130,7 +154,11 @@ public class ResConfigFlags {
         this.smallestScreenWidthDp = smallestScreenWidthDp;
         this.screenWidthDp = screenWidthDp;
         this.screenHeightDp = screenHeightDp;
+        this.localeScript = localeScript;
+        this.localeVariant = localeVariant;
+        this.screenLayout2 = screenLayout2;
         this.isInvalid = isInvalid;
+        this.size = size;
         mQualifiers = generateQualifiers();
     }
 
@@ -142,18 +170,29 @@ public class ResConfigFlags {
         StringBuilder ret = new StringBuilder();
         if (mcc != 0) {
             ret.append("-mcc").append(String.format("%03d", mcc));
-            if (mcc != MNC_ZERO) {
-                if (mnc != 0 && mnc != -1) {
-                    ret.append("-mnc").append(mnc);
+            if (mnc != MNC_ZERO) {
+                if (mnc != 0) {
+                    ret.append("-mnc");
+                    if (size <= 32) {
+                        if (mnc > 0 && mnc < 10) {
+                            ret.append(String.format("%02d", mnc));
+                        } else {
+                            ret.append(String.format("%03d", mnc));
+                        }
+                    } else {
+                        ret.append(mnc);
+                    }
                 }
+            } else {
+                ret.append("-mnc00");
+            }
+        } else {
+            if (mnc != 0) {
+                ret.append("-mnc").append(mnc);
             }
         }
-        if (language[0] != '\00') {
-            ret.append('-').append(language);
-            if (country[0] != '\00') {
-                ret.append("-r").append(country);
-            }
-        }
+        ret.append(getLocaleString());
+
         switch (screenLayout & MASK_LAYOUTDIR) {
             case SCREENLAYOUT_LAYOUTDIR_RTL:
                 ret.append("-ldrtl");
@@ -193,6 +232,14 @@ public class ResConfigFlags {
                 ret.append("-notlong");
                 break;
         }
+        switch (screenLayout2 & MASK_SCREENROUND) {
+            case SCREENLAYOUT_ROUND_NO:
+                ret.append("-notround");
+                break;
+            case SCREENLAYOUT_ROUND_YES:
+                ret.append("-round");
+                break;
+        }
         switch (orientation) {
             case ORIENTATION_PORT:
                 ret.append("-port");
@@ -223,11 +270,17 @@ public class ResConfigFlags {
             case UI_MODE_TYPE_LARGEUI:
                 ret.append("-largeui");
                 break;
+            case UI_MODE_TYPE_GODZILLAUI:
+                ret.append("-godzillaui");
+                break;
             case UI_MODE_TYPE_HUGEUI:
                 ret.append("-hugeui");
                 break;
             case UI_MODE_TYPE_APPLIANCE:
                 ret.append("-appliance");
+                break;
+            case UI_MODE_TYPE_WATCH:
+                ret.append("-watch");
                 break;
         }
         switch (uiMode & MASK_UI_MODE_NIGHT) {
@@ -261,6 +314,9 @@ public class ResConfigFlags {
                 break;
             case DENSITY_XXXHIGH:
                 ret.append("-xxxhdpi");
+                break;
+            case DENSITY_ANY:
+                ret.append("-anydpi");
                 break;
             case DENSITY_NONE:
                 ret.append("-nodpi");
@@ -330,30 +386,76 @@ public class ResConfigFlags {
                 ret.append(String.format("-%dx%d", screenHeight, screenWidth));
             }
         }
-        if (sdkVersion > getNaturalSdkVersionRequirement()) {
+        if (sdkVersion > 0 && sdkVersion >= getNaturalSdkVersionRequirement()) {
             ret.append("-v").append(sdkVersion);
         }
         if (isInvalid) {
-            ret.append("-ERR" + sErrCounter++);
+            ret.append("-ERR").append(sErrCounter++);
         }
 
         return ret.toString();
     }
 
     private short getNaturalSdkVersionRequirement() {
-        if (smallestScreenWidthDp != 0 || screenWidthDp != 0
-                || screenHeightDp != 0) {
+        if ((screenLayout2 & MASK_SCREENROUND) != 0) {
+            return SDK_MNC;
+        }
+        if (density == DENSITY_ANY) {
+            return SDK_LOLLIPOP;
+        }
+        if (smallestScreenWidthDp != 0 || screenWidthDp != 0 || screenHeightDp != 0) {
             return SDK_HONEYCOMB_MR2;
         }
         if ((uiMode & (MASK_UI_MODE_TYPE | MASK_UI_MODE_NIGHT)) != UI_MODE_NIGHT_ANY) {
             return SDK_FROYO;
         }
-        if ((screenLayout & (MASK_SCREENSIZE | MASK_SCREENLONG)) != SCREENSIZE_ANY
-                || density != DENSITY_DEFAULT) {
+        if ((screenLayout & (MASK_SCREENSIZE | MASK_SCREENLONG)) != SCREENSIZE_ANY || density != DENSITY_DEFAULT) {
             return SDK_DONUT;
         }
         return 0;
     }
+
+    private String getLocaleString() {
+        StringBuilder sb = new StringBuilder();
+
+        // check for old style non BCP47 tags
+        // allows values-xx-rXX, values-xx, values-xxx-rXX
+        // denies values-xxx, anything else
+        if (localeVariant == null && localeScript == null && (region[0] != '\00' || language[0] != '\00') &&
+                region.length != 3) {
+            sb.append("-").append(language);
+            if (region[0] != '\00') {
+                sb.append("-r").append(region);
+            }
+        } else { // BCP47
+            if (language[0] == '\00' && region[0] == '\00') {
+                return sb.toString(); // early return, no language or region
+            }
+            sb.append("-b+");
+            if (language[0] != '\00') {
+                sb.append(language);
+            }
+            if (localeScript != null && localeScript.length == 4) {
+                sb.append("+").append(localeScript);
+            }
+            if ((region.length == 2 || region.length == 3) && region[0] != '\00') {
+                sb.append("+").append(region);
+            }
+            if (localeVariant != null && localeVariant.length >= 5) {
+                sb.append("+").append(toUpper(localeVariant));
+            }
+        }
+        return sb.toString();
+    }
+
+    private String toUpper(char[] character) {
+        StringBuilder sb = new StringBuilder();
+        for (char ch: character) {
+            sb.append(Character.toUpperCase(ch));
+        }
+        return sb.toString();
+    }
+
 
     @Override
     public String toString() {
@@ -401,7 +503,10 @@ public class ResConfigFlags {
     public final static byte SDK_JELLY_BEAN = 16;
     public final static byte SDK_JELLY_BEAN_MR1 = 17;
     public final static byte SDK_JELLY_BEAN_MR2 = 18;
-    public final static byte KITKAT = 19;
+    public final static byte SDK_KITKAT = 19;
+    public final static byte SDK_LOLLIPOP = 21;
+    public final static byte SDK_LOLLIPOP_MR1 = 22;
+    public final static byte SDK_MNC = 23;
 
     public final static byte ORIENTATION_ANY = 0;
     public final static byte ORIENTATION_PORT = 1;
@@ -422,15 +527,21 @@ public class ResConfigFlags {
     public final static int DENSITY_XHIGH = 320;
     public final static int DENSITY_XXHIGH = 480;
     public final static int DENSITY_XXXHIGH = 640;
+    public final static int DENSITY_ANY = 0xFFFE;
     public final static int DENSITY_NONE = 0xFFFF;
 
-    public final static int MNC_ZERO = 0xFFFF;
+    public final static int MNC_ZERO = -1;
 
     public final static short MASK_LAYOUTDIR = 0xc0;
     public final static short SCREENLAYOUT_LAYOUTDIR_ANY = 0x00;
     public final static short SCREENLAYOUT_LAYOUTDIR_LTR = 0x40;
     public final static short SCREENLAYOUT_LAYOUTDIR_RTL = 0x80;
     public final static short SCREENLAYOUT_LAYOUTDIR_SHIFT = 0x06;
+
+    public final static short MASK_SCREENROUND = 0x03;
+    public final static short SCREENLAYOUT_ROUND_ANY = 0;
+    public final static short SCREENLAYOUT_ROUND_NO = 0x1;
+    public final static short SCREENLAYOUT_ROUND_YES = 0x2;
 
     public final static byte KEYBOARD_ANY = 0;
     public final static byte KEYBOARD_NOKEYS = 1;
@@ -473,16 +584,20 @@ public class ResConfigFlags {
     public final static byte UI_MODE_TYPE_CAR = 0x03;
     public final static byte UI_MODE_TYPE_TELEVISION = 0x04;
     public final static byte UI_MODE_TYPE_APPLIANCE = 0x05;
+    public final static byte UI_MODE_TYPE_WATCH = 0x06;
+
+    // start - miui
+    public final static byte UI_MODE_TYPE_GODZILLAUI = 0x0b;
     public final static byte UI_MODE_TYPE_SMALLUI = 0x0c;
     public final static byte UI_MODE_TYPE_MEDIUMUI = 0x0d;
     public final static byte UI_MODE_TYPE_LARGEUI = 0x0e;
     public final static byte UI_MODE_TYPE_HUGEUI = 0x0f;
+    // end - miui
 
     public final static byte MASK_UI_MODE_NIGHT = 0x30;
     public final static byte UI_MODE_NIGHT_ANY = 0x00;
     public final static byte UI_MODE_NIGHT_NO = 0x10;
     public final static byte UI_MODE_NIGHT_YES = 0x20;
 
-    private static final Logger LOGGER = Logger.getLogger(ResConfigFlags.class
-            .getName());
+    private static final Logger LOGGER = Logger.getLogger(ResConfigFlags.class.getName());
 }

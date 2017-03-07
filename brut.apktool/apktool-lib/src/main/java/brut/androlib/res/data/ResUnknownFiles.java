@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@ import java.util.Map;
  */
 public class ResUnknownFiles {
 
-    private final Map<String, String> mUnknownFiles = new LinkedHashMap<String, String>();
+    private final Map<String, String> mUnknownFiles = new LinkedHashMap<>();
 
     public void addUnknownFileInfo(String file, String value) {
-        mUnknownFiles.put(file,value);
+        mUnknownFiles.put(file, value);
     }
 
     public Map<String, String> getUnknownFiles() {

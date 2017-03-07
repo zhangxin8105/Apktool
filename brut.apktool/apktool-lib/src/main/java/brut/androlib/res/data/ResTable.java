@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package brut.androlib.res.data;
 
 import brut.androlib.AndrolibException;
 import brut.androlib.err.UndefinedResObject;
+import brut.androlib.meta.VersionInfo;
 import brut.androlib.res.AndrolibResources;
 import brut.androlib.res.data.value.ResValue;
 import java.util.*;
@@ -33,14 +34,14 @@ public class ResTable {
     private final Set<ResPackage> mMainPackages = new LinkedHashSet<ResPackage>();
     private final Set<ResPackage> mFramePackages = new LinkedHashSet<ResPackage>();
 
-    private String mFrameTag;
     private String mPackageRenamed;
     private String mPackageOriginal;
     private int mPackageId;
     private boolean mAnalysisMode = false;
+    private boolean mSharedLibrary = false;
 
-    private Map<String, String> mSdkInfo = new LinkedHashMap<String, String>();
-    private Map<String, String> mVersionInfo = new LinkedHashMap<String, String>();
+    private Map<String, String> mSdkInfo = new LinkedHashMap<>();
+    private VersionInfo mVersionInfo = new VersionInfo();
 
     public ResTable() {
         mAndRes = null;
@@ -51,6 +52,13 @@ public class ResTable {
     }
 
     public ResResSpec getResSpec(int resID) throws AndrolibException {
+        // The pkgId is 0x00. That means a shared library is using its
+        // own resource, so lie to the caller replacing with its own
+        // packageId
+        if (resID >> 24 == 0) {
+            int pkgId = (mPackageId == 0 ? 2 : mPackageId);
+            resID = (0xFF000000 & (pkgId << 24)) | resID;
+        }
         return getResSpec(new ResID(resID));
     }
 
@@ -72,7 +80,7 @@ public class ResTable {
             return pkg;
         }
         if (mAndRes != null) {
-            return mAndRes.loadFrameworkPkg(this, id, mFrameTag);
+            return mAndRes.loadFrameworkPkg(this, id, mAndRes.apkOptions.frameworkTag);
         }
         throw new UndefinedResObject(String.format("package: id=%d", id));
     }
@@ -80,8 +88,8 @@ public class ResTable {
     public ResPackage getHighestSpecPackage() throws AndrolibException {
         int id = 0;
         int value = 0;
-        for(ResPackage resPackage : mPackagesById.values()) {
-            if(resPackage.getResSpecCount() > value && !resPackage.getName().equalsIgnoreCase("android")) {
+        for (ResPackage resPackage : mPackagesById.values()) {
+            if (resPackage.getResSpecCount() > value && !resPackage.getName().equalsIgnoreCase("android")) {
                 value = resPackage.getResSpecCount();
                 id = resPackage.getId();
             }
@@ -96,6 +104,9 @@ public class ResTable {
         if (pkg != null) {
             return pkg;
         } else {
+            if (mMainPackages.size() == 1) {
+                return mMainPackages.iterator().next();
+            }
             return getHighestSpecPackage();
         }
     }
@@ -116,18 +127,14 @@ public class ResTable {
         return mPackagesByName.containsKey(name);
     }
 
-    public ResValue getValue(String package_, String type, String name)
-            throws AndrolibException {
-        return getPackage(package_).getType(type).getResSpec(name)
-                .getDefaultResource().getValue();
+    public ResValue getValue(String package_, String type, String name) throws AndrolibException {
+        return getPackage(package_).getType(type).getResSpec(name).getDefaultResource().getValue();
     }
 
-    public void addPackage(ResPackage pkg, boolean main)
-            throws AndrolibException {
+    public void addPackage(ResPackage pkg, boolean main) throws AndrolibException {
         Integer id = pkg.getId();
         if (mPackagesById.containsKey(id)) {
-            throw new AndrolibException("Multiple packages: id="
-                    + id.toString());
+            throw new AndrolibException("Multiple packages: id=" + id.toString());
         }
         String name = pkg.getName();
         if (mPackagesByName.containsKey(name)) {
@@ -141,10 +148,6 @@ public class ResTable {
         } else {
             mFramePackages.add(pkg);
         }
-    }
-
-    public void setFrameTag(String tag) {
-        mFrameTag = tag;
     }
 
     public void setAnalysisMode(boolean mode) {
@@ -163,6 +166,10 @@ public class ResTable {
         mPackageId = id;
     }
 
+    public void setSharedLibrary(boolean flag) {
+        mSharedLibrary = flag;
+    }
+
     public void clearSdkInfo() {
         mSdkInfo.clear();
     }
@@ -171,11 +178,15 @@ public class ResTable {
         mSdkInfo.put(key, value);
     }
 
-    public void addVersionInfo(String key, String value) {
-        mVersionInfo.put(key, value);
+    public void setVersionName(String versionName) {
+        mVersionInfo.versionName = versionName;
     }
 
-    public Map<String, String> getVersionInfo() {
+    public void setVersionCode(String versionCode) {
+        mVersionInfo.versionCode = versionCode;
+    }
+
+    public VersionInfo getVersionInfo() {
         return mVersionInfo;
     }
 
@@ -197,5 +208,9 @@ public class ResTable {
 
     public int getPackageId() {
         return mPackageId;
+    }
+
+    public boolean getSharedLibrary() {
+        return mSharedLibrary;
     }
 }

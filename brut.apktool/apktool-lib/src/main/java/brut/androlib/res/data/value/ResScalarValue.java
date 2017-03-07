@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -27,12 +27,13 @@ import org.xmlpull.v1.XmlSerializer;
 /**
  * @author Ryszard Wiśniewski <brut.alll@gmail.com>
  */
-public abstract class ResScalarValue extends ResValue implements
+public abstract class ResScalarValue extends ResIntBasedValue implements
         ResXmlEncodable, ResValuesXmlSerializable {
     protected final String mType;
     protected final String mRawValue;
 
-    protected ResScalarValue(String type, String rawValue) {
+    protected ResScalarValue(String type, int rawIntValue, String rawValue) {
+        super(rawIntValue);
         mType = type;
         mRawValue = rawValue;
     }
@@ -59,6 +60,10 @@ public abstract class ResScalarValue extends ResValue implements
 
     public String encodeAsResXmlNonEscapedItemValue() throws AndrolibException {
         return encodeAsResXmlValue().replace("&amp;", "&").replace("&lt;","<");
+    }
+
+    public boolean hasMultipleNonPositionalSubstitutions() throws AndrolibException {
+        return ResXmlEncoders.hasMultipleNonPositionalSubstitutions(mRawValue);
     }
 
     @Override

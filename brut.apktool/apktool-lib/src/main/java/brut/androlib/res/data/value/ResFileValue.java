@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,10 +21,11 @@ import brut.androlib.AndrolibException;
 /**
  * @author Ryszard Wiśniewski <brut.alll@gmail.com>
  */
-public class ResFileValue extends ResValue {
+public class ResFileValue extends ResIntBasedValue {
     private final String mPath;
 
-    public ResFileValue(String path) {
+    public ResFileValue(String path, int rawIntValue) {
+        super(rawIntValue);
         this.mPath = path;
     }
 
@@ -33,10 +34,17 @@ public class ResFileValue extends ResValue {
     }
 
     public String getStrippedPath() throws AndrolibException {
-        if (!mPath.startsWith("res/")) {
-            throw new AndrolibException(
-                    "File path does not start with \"res/\": " + mPath);
+        if (mPath.startsWith("res/")) {
+            return mPath.substring(4);
         }
-        return mPath.substring(4);
+        if (mPath.startsWith("r/") || mPath.startsWith("R/")) {
+            return mPath.substring(2);
+        }
+        throw new AndrolibException("File path does not start with \"res/\" or \"r/\": " + mPath);
+    }
+
+    @Override
+    public String toString() {
+        return mPath;
     }
 }

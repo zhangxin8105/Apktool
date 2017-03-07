@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import brut.androlib.res.xml.ResValuesXmlSerializable;
 import brut.androlib.res.xml.ResXmlEncoders;
 import brut.util.Duo;
 import java.io.IOException;
-import org.apache.commons.lang3.StringUtils;
 import org.xmlpull.v1.XmlSerializer;
 
 /**
@@ -65,6 +64,5 @@ public class ResPluralsValue extends ResBagValue implements
 
     public static final int BAG_KEY_PLURALS_START = 0x01000004;
     public static final int BAG_KEY_PLURALS_END = 0x01000009;
-    private static final String[] QUANTITY_MAP = new String[] { "other",
-            "zero", "one", "two", "few", "many" };
+    private static final String[] QUANTITY_MAP = new String[] { "other", "zero", "one", "two", "few", "many" };
 }

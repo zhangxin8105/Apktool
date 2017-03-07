@@ -1,5 +1,5 @@
 /**
- *  Copyright 2010 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,20 +16,20 @@
 
 package brut.directory;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
+import java.net.URLDecoder;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 
 public class FileDirectory extends AbstractDirectory {
     private File mDir;
 
-    public FileDirectory(String dir) throws DirectoryException {
-        this(new File(dir));
+    public FileDirectory(ExtFile dir, String folder) throws DirectoryException, UnsupportedEncodingException {
+        this(new File(dir.toString().replaceAll("%20", " "), folder));
+    }
+
+    public FileDirectory(String dir) throws DirectoryException, UnsupportedEncodingException {
+        this(new File(URLDecoder.decode(dir, "UTF-8")));
     }
 
     public FileDirectory(File dir) throws DirectoryException {
@@ -79,7 +79,7 @@ public class FileDirectory extends AbstractDirectory {
     protected void removeFileLocal(String name) {
         new File(generatePath(name)).delete();
     }
-    
+
     private String generatePath(String name) {
         return getDir().getPath() + separator + name;
     }
@@ -87,7 +87,7 @@ public class FileDirectory extends AbstractDirectory {
     private void loadAll() {
         mFiles = new LinkedHashSet<String>();
         mDirs = new LinkedHashMap<String, AbstractDirectory>();
-        
+
         File[] files = getDir().listFiles();
         for (int i = 0; i < files.length; i++) {
             File file = files[i];

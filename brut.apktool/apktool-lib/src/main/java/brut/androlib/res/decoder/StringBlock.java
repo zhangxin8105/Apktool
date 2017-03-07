@@ -1,5 +1,5 @@
 /**
- *  Copyright 2011 Ryszard Wiśniewski <brut.alll@gmail.com>
+ *  Copyright 2014 Ryszard Wiśniewski <brut.alll@gmail.com>
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -41,10 +41,12 @@ public class StringBlock {
      * be at the chunk type.
      */
     public static StringBlock read(ExtDataInput reader) throws IOException {
-        reader.skipCheckInt(CHUNK_TYPE);
+        reader.skipCheckChunkTypeInt(CHUNK_STRINGPOOL_TYPE, CHUNK_NULL_TYPE);
         int chunkSize = reader.readInt();
+
+        // ResStringPool_header
         int stringCount = reader.readInt();
-        int styleOffsetCount = reader.readInt();
+        int styleCount = reader.readInt();
         int flags = reader.readInt();
         int stringsOffset = reader.readInt();
         int stylesOffset = reader.readInt();
@@ -55,24 +57,25 @@ public class StringBlock {
         block.m_stringOwns = new int[stringCount];
         Arrays.fill(block.m_stringOwns, -1);
 
-        if (styleOffsetCount != 0) {
-            block.m_styleOffsets = reader.readIntArray(styleOffsetCount);
+        if (styleCount != 0) {
+            block.m_styleOffsets = reader.readIntArray(styleCount);
         }
-        {
-            int size = ((stylesOffset == 0) ? chunkSize : stylesOffset)
-                    - stringsOffset;
-            if ((size % 4) != 0) {
-                throw new IOException("String data size is not multiple of 4 (" + size + ").");
-            }
-            block.m_strings = new byte[size];
-            reader.readFully(block.m_strings);
-        }
+
+        int size = ((stylesOffset == 0) ? chunkSize : stylesOffset) - stringsOffset;
+        block.m_strings = new byte[size];
+        reader.readFully(block.m_strings);
+
         if (stylesOffset != 0) {
-            int size = (chunkSize - stylesOffset);
-            if ((size % 4) != 0) {
-                throw new IOException("Style data size is not multiple of 4 (" + size + ").");
-            }
+            size = (chunkSize - stylesOffset);
             block.m_styles = reader.readIntArray(size / 4);
+
+            // read remaining bytes
+            int remaining = size % 4;
+            if (remaining >= 1) {
+                while (remaining-- > 0) {
+                    reader.readByte();
+                }
+            }
         }
 
         return block;
@@ -238,7 +241,6 @@ public class StringBlock {
         return -1;
     }
 
-    // /////////////////////////////////////////// implementation
     private StringBlock() {
     }
 
@@ -343,6 +345,7 @@ public class StringBlock {
     private static final Logger LOGGER = Logger.getLogger(StringBlock.class.getName());
 
     // ResChunk_header = header.type (0x0001) + header.headerSize (0x001C)
-    private static final int CHUNK_TYPE = 0x001C0001;
+    private static final int CHUNK_STRINGPOOL_TYPE = 0x001C0001;
+    private static final int CHUNK_NULL_TYPE = 0x00000000;
     private static final int UTF8_FLAG = 0x00000100;
 }
